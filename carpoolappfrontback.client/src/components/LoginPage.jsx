@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-//import '../styles/LoginPage.css';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -8,90 +8,72 @@ export default function LoginPage() {
     const [role, setRole] = useState('driver');
     const navigate = useNavigate();
 
-    const handleLogin = () => {
-        if (!email || !password) {
-            alert('Please enter both email and password.');
-            return;
-        }
+    const handleLogin = async () => {
+        try {
+            const res = await axios.post('https://localhost:7161/api/auth/login', {
+                universityEmail: email,
+                password: password,
+                role: role
+            });
 
-        // Simulate success and store dummy user data
-        localStorage.setItem('userId', 'dummy123');
-        localStorage.setItem('role', role);
-        localStorage.setItem('token', 'dummy-token');
+            alert(res.data.message);
 
-        if (role === 'driver') {
-            navigate('/driver-dashboard');
-        } else {
-            navigate('/passenger-dashboard');
+            localStorage.setItem('userId', res.data.userId);
+            localStorage.setItem('role', res.data.role);
+            localStorage.setItem('token', res.data.token);
+
+            if (res.data.role === 'driver') {
+                navigate('/driver-dashboard');
+            } else {
+                navigate('/passenger-dashboard');
+            }
+
+        } catch (err) {
+            console.error("Login error:", err);
+            alert(err.response?.data?.message || 'Login failed.');
         }
     };
 
-    const handleSignUp = () => {
+    const handleGoToRegister = () => {
         navigate('/register');
     };
 
     return (
-        <div className="login-screen">
-            <div className="login-screen-body">
-                <div className="login-header">
-                    <div className="login-app-logo"></div>
-                    <h2>UniRide</h2>
-                    <p className="text-gray">Your university carpooling solution</p>
-                </div>
-
-                <div className="login-form-group">
-                    <div className="login-form-label">University Email</div>
+        <div>
+            <h2>Login to UniRide</h2>
+            <input
+                placeholder="University Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+            />
+            <input
+                placeholder="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+            />
+            <div>
+                <label>
                     <input
-                        type="email"
-                        className="login-input-field"
-                        placeholder="studentid@st.habib.edu.pk"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
-                </div>
-
-                <div className="login-form-group">
-                    <div className="login-form-label">Password</div>
+                        type="radio"
+                        value="driver"
+                        checked={role === 'driver'}
+                        onChange={() => setRole('driver')}
+                    /> Driver
+                </label>
+                <label>
                     <input
-                        type="password"
-                        className="login-input-field"
-                        placeholder="●●●●●●●●"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
-                </div>
-
-                <div className="login-form-group">
-                    <div className="login-form-label">Login as</div>
-                    <div className="login-role-container">
-                        <button
-                            className={`login-role-button ${role === 'driver' ? 'active' : ''}`}
-                            onClick={() => setRole('driver')}
-                        >
-                            Driver
-                        </button>
-                        <button
-                            className={`login-role-button ${role === 'passenger' ? 'active' : ''}`}
-                            onClick={() => setRole('passenger')}
-                        >
-                            Passenger
-                        </button>
-                    </div>
-                </div>
-
-                <div className="login-action-buttons">
-                    <button className="login-button" onClick={handleLogin}>
-                        Login
-                    </button>
-                    <button className="signup-button" onClick={handleSignUp}>
-                        Sign Up
-                    </button>
-                </div>
-
-                <div className="login-forgot-password">
-                    <a href="#">Forgot Password?</a>
-                </div>
+                        type="radio"
+                        value="passenger"
+                        checked={role === 'passenger'}
+                        onChange={() => setRole('passenger')}
+                    /> Passenger
+                </label>
             </div>
+
+            <button onClick={handleLogin}>Login</button>
+
+            <p>Don't have an account? <button onClick={handleGoToRegister}>Register Here</button></p>
         </div>
     );
 }

@@ -11,8 +11,9 @@ export default function CreateRidePage() {
     const [availableSeats, setAvailableSeats] = useState(1);
     const [pricePerSeat, setPricePerSeat] = useState('');
     const [vehicles, setVehicles] = useState([]);
-    const navigate = useNavigate();
+    const [loadingVehicles, setLoadingVehicles] = useState(true);
 
+    const navigate = useNavigate();
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
 
@@ -22,20 +23,22 @@ export default function CreateRidePage() {
             return;
         }
 
-        const fetchVehicles = async () => {
-            try {
-                const res = await axios.get('/api/driver/profile/vehicles', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setVehicles(res.data);
-            } catch (err) {
-                console.error('Error fetching vehicles:', err);
-                console.log(err);
-            }
-        };
-
         fetchVehicles();
     }, [navigate]);
+
+    const fetchVehicles = async () => {
+        try {
+            const res = await axios.get('https://localhost:7161/api/driver/profile/vehicles', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setVehicles(res.data || []);
+        } catch (err) {
+            console.error('Error fetching vehicles:', err);
+            alert('Failed to load your vehicles.');
+        } finally {
+            setLoadingVehicles(false);
+        }
+    };
 
     const handleRouteStopChange = (index, value) => {
         const updated = [...routeStops];
@@ -50,18 +53,23 @@ export default function CreateRidePage() {
     };
 
     const handleSubmit = async () => {
+        if (!origin || !destination || !vehicleId) {
+            alert('Please fill in all required fields.');
+            return;
+        }
+
         try {
             const payload = {
                 origin,
                 destination,
-                routeStops: routeStops.filter(s => s.trim() !== ''), // convert to JSON string
+                routeStops: routeStops.filter(stop => stop.trim() !== ''),
                 departureTime: new Date(departureTime),
                 vehicleId: parseInt(vehicleId),
                 availableSeats: parseInt(availableSeats),
                 pricePerSeat: parseInt(pricePerSeat)
             };
 
-            await axios.post('/api/ridemanagement/create', payload, {
+            await axios.post('https://localhost:7161/api/ridemanagement/create', payload, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -74,11 +82,19 @@ export default function CreateRidePage() {
     };
 
     return (
-        <div>
+        <div style={{ padding: '20px' }}>
             <h2>Create Ride</h2>
 
-            <input placeholder="Origin" value={origin} onChange={(e) => setOrigin(e.target.value)} />
-            <input placeholder="Destination" value={destination} onChange={(e) => setDestination(e.target.value)} />
+            <input
+                placeholder="Origin"
+                value={origin}
+                onChange={(e) => setOrigin(e.target.value)}
+            />
+            <input
+                placeholder="Destination"
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+            />
 
             <div>
                 <label>Route Stops (Optional):</label>
@@ -106,14 +122,22 @@ export default function CreateRidePage() {
 
             <div>
                 <label>Select Vehicle:</label>
-                <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
-                    <option value="">-- Select Vehicle --</option>
-                    {vehicles.map(v => (
-                        <option key={v.vehicleId} value={v.vehicleId}>
-                            {`${v.make} ${v.model} - ${v.numberPlate}`}
-                        </option>
-                    ))}
-                </select>
+                {loadingVehicles ? (
+                    <p>Loading vehicles...</p>
+                ) : (
+                    <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
+                        <option value="">-- Select Vehicle --</option>
+                        {Array.isArray(vehicles) && vehicles.length > 0 ? (
+                            vehicles.map((v) => (
+                                <option key={v.vehicleId} value={v.vehicleId}>
+                                    {`${v.make} ${v.model} - ${v.numberPlate}`}
+                                </option>
+                            ))
+                        ) : (
+                            <option value="" disabled>No Vehicles Available</option>
+                        )}
+                    </select>
+                )}
             </div>
 
             <input

@@ -8,8 +8,9 @@ export default function DriverProfile() {
     const [model, setModel] = useState('');
     const [numberPlate, setNumberPlate] = useState('');
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
+    const [error, setError] = useState('');
 
+    const navigate = useNavigate();
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
 
@@ -18,21 +19,20 @@ export default function DriverProfile() {
             navigate('/');
             return;
         }
-
         fetchVehicles();
     }, [navigate]);
 
     const fetchVehicles = async () => {
         try {
-            const res = await axios.get('/api/driver/profile/vehicles', {
+            const res = await axios.get('https://localhost:7161/api/driver/profile/vehicles', {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            setVehicles(res.data);
-            setLoading(false);
+            setVehicles(res.data || []);
         } catch (err) {
             console.error('Error fetching vehicles:', err);
-
-            navigate('/');
+            setError('Failed to load vehicles.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -42,10 +42,8 @@ export default function DriverProfile() {
             return;
         }
 
-        console.log('Sending Data:', { make, model, numberPlate });
-
         try {
-            const response = await axios.post('/api/driver/profile/vehicle', {
+            await axios.post('https://localhost:7161/api/driver/profile/vehicle', {
                 make,
                 model,
                 numberPlate
@@ -53,35 +51,37 @@ export default function DriverProfile() {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            console.log('Response:', response.data);
-
+            // After successful add, clear fields and reload vehicles
             setMake('');
             setModel('');
             setNumberPlate('');
-            fetchVehicles(); // Refresh list
+            fetchVehicles();
         } catch (err) {
-            console.error('Error Response:', err.response?.data);
+            console.error('Error adding vehicle:', err.response?.data);
             alert(err.response?.data?.message || 'Failed to add vehicle.');
         }
     };
 
-
-
     return (
         <div>
             <h2>Driver Profile</h2>
+
+            {error && <p style={{ color: 'red' }}>{error}</p>}
 
             <h3>Your Vehicles</h3>
             {loading ? (
                 <p>Loading vehicles...</p>
             ) : (
                 <ul>
-                    {vehicles.map(v => (
-                        <li key={v.vehicleId}>
-                            {`${v.make} ${v.model} - ${v.numberPlate}`}
-                        </li>
-                    ))}
-
+                    {vehicles.length > 0 ? (
+                        vehicles.map((v) => (
+                            <li key={v.vehicleId}>
+                                {`${v.make} ${v.model} - ${v.numberPlate}`}
+                            </li>
+                        ))
+                    ) : (
+                        <li><i>No vehicles registered yet.</i></li>
+                    )}
                 </ul>
             )}
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
@@ -6,11 +6,9 @@ export default function PassengerDashboard() {
     const [rides, setRides] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
-    //const [requestStatuses, setRequestStatuses] = useState({}); // Track ride request status
+    const [rideLocationsMap, setRideLocationsMap] = useState({});
     const [pickupLocation, setPickupLocation] = useState("");
     const [dropoffLocation, setDropoffLocation] = useState("");
-    //const [searchResults, setSearchResults] = useState([]);
-    const [rideLocationsMap, setRideLocationsMap] = useState({});
     const [customPickup, setCustomPickup] = useState(false);
     const [customDropoff, setCustomDropoff] = useState(false);
 
@@ -30,20 +28,23 @@ export default function PassengerDashboard() {
                     headers: { Authorization: `Bearer ${token}` },
                 });
 
-                const ridesData = res.data;
+                const ridesData = Array.isArray(res.data) ? res.data : [];
                 setRides(ridesData);
                 setLoading(false);
 
-                // Fetch ride locations for each ride
                 for (const ride of ridesData) {
-                    const locationRes = await axios.get(`/api/booking/ride-locations/${ride.rideId}`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                    });
+                    try {
+                        const locationRes = await axios.get(`/api/booking/ride-locations/${ride.rideId}`, {
+                            headers: { Authorization: `Bearer ${token}` },
+                        });
 
-                    setRideLocationsMap(prev => ({
-                        ...prev,
-                        [ride.rideId]: locationRes.data.locations
-                    }));
+                        setRideLocationsMap(prev => ({
+                            ...prev,
+                            [ride.rideId]: Array.isArray(locationRes.data.locations) ? locationRes.data.locations : [],
+                        }));
+                    } catch (err) {
+                        console.error("Error fetching ride locations:", err);
+                    }
                 }
             } catch (err) {
                 console.error("Unauthorized or error fetching rides:", err);
@@ -56,9 +57,8 @@ export default function PassengerDashboard() {
 
     const sendRideRequest = async (rideId, origin, destination) => {
         try {
-            // Update ride status optimistically
-            setRides((prevRides) =>
-                prevRides.map((ride) =>
+            setRides(prevRides =>
+                prevRides.map(ride =>
                     ride.rideId === rideId ? { ...ride, rideRequestStatus: "Pending" } : ride
                 )
             );
@@ -68,7 +68,7 @@ export default function PassengerDashboard() {
                 PickupLocation: pickupLocation,
                 DropoffLocation: dropoffLocation,
                 Source: origin,
-                Destination: destination
+                Destination: destination,
             };
 
             const res = await axios.post("/api/booking/request-ride", requestBody, {
@@ -82,8 +82,8 @@ export default function PassengerDashboard() {
             }
         } catch (error) {
             console.error("Error sending ride request:", error.response?.data || error.message);
-            setRides((prevRides) =>
-                prevRides.map((ride) =>
+            setRides(prevRides =>
+                prevRides.map(ride =>
                     ride.rideId === rideId ? { ...ride, rideRequestStatus: "Failed" } : ride
                 )
             );
@@ -92,13 +92,13 @@ export default function PassengerDashboard() {
 
     if (loading) return <p>Loading available rides...</p>;
 
-    const displayRides = rides.filter((ride) =>
-        ride.origin.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        ride.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const displayRides = Array.isArray(rides) ? rides.filter(ride =>
+        ride.origin?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ride.destination?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (Array.isArray(ride.routeStops) && ride.routeStops.some(stop =>
             stop.toLowerCase().includes(searchTerm.toLowerCase())
         ))
-    );
+    ) : [];
 
     return (
         <div>
@@ -120,7 +120,7 @@ export default function PassengerDashboard() {
 
                     return (
                         <div key={index}>
-                            <p><strong>From:</strong> {ride.origin} ? <strong>To:</strong> {ride.destination}</p>
+                            <p><strong>From:</strong> {ride.origin} → <strong>To:</strong> {ride.destination}</p>
                             <p><strong>Departure:</strong> {new Date(ride.departureTime).toLocaleString()}</p>
                             <p><strong>Seats:</strong> {ride.availableSeats}</p>
                             <p><strong>Price:</strong> {ride.pricePerSeat} PKR</p>
@@ -129,10 +129,16 @@ export default function PassengerDashboard() {
 
                             <p><strong>Route Stops:</strong></p>
                             {Array.isArray(ride.routeStops) && ride.routeStops.length > 0 ? (
-                                <ul>{ride.routeStops.map((stop, i) => <li key={i}>{stop}</li>)}</ul>
-                            ) : <p>No route stops available</p>}
+                                <ul>
+                                    {ride.routeStops.map((stop, i) => (
+                                        <li key={i}>{stop}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p>No route stops available</p>
+                            )}
 
-                            {/* Pickup / Dropoff Location Selectors */}
+                            {/* Pickup/Dropoff Selection */}
                             <div>
                                 <label>Pickup Location:</label>
                                 {customPickup ? (
@@ -182,12 +188,14 @@ export default function PassengerDashboard() {
                                     {customDropoff ? "Use Dropdown" : "Custom Dropoff"}
                                 </button>
                             </div>
+
                             <button
                                 onClick={() => sendRideRequest(ride.rideId, ride.origin, ride.destination)}
                                 disabled={ride.rideRequestStatus === "Pending" || ride.rideRequestStatus === "Accepted"}
                             >
                                 {ride.rideRequestStatus === "Denied" ? "Send Request Again" : ride.rideRequestStatus || "Send Request"}
                             </button>
+
                             <hr />
                         </div>
                     );
@@ -195,6 +203,7 @@ export default function PassengerDashboard() {
             ) : (
                 <p>No available rides.</p>
             )}
+
             <div style={{ marginTop: "30px" }}>
                 <button onClick={() => navigate("/passenger/profile")}>
                     View Accepted Rides

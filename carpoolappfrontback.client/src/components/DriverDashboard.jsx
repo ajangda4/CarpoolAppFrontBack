@@ -27,7 +27,7 @@ export default function DriverDashboard() {
                 const timestamp = res.data.timestamp;
 
                 const ridesWithAccepted = await Promise.all(
-                    rides.map(async (ride) => {
+                    Array.isArray(rides) ? rides.map(async (ride) => {
                         const acceptedRes = await axios.get(
                             `/api/ridemanagement/accepted-passengers/${ride.rideId}`,
                             { headers: { Authorization: `Bearer ${token}` } }
@@ -36,7 +36,7 @@ export default function DriverDashboard() {
                             ...ride,
                             acceptedPassengers: acceptedRes.data,
                         };
-                    })
+                    }) : []
                 );
 
                 setRidesWithRequests(ridesWithAccepted);
@@ -61,7 +61,7 @@ export default function DriverDashboard() {
             setRidesWithRequests(prev =>
                 prev.map(ride => ({
                     ...ride,
-                    requests: ride.requests.filter(req => req.requestId !== requestId)
+                    requests: Array.isArray(ride.requests) ? ride.requests.filter(req => req.requestId !== requestId) : []
                 }))
             );
         } catch (err) {
@@ -85,13 +85,13 @@ export default function DriverDashboard() {
     return (
         <div style={{ padding: "20px", maxWidth: "900px", margin: "0 auto" }}>
             <h2>Driver Dashboard</h2>
-            <p><strong>Last Updated:</strong> {new Date(timestamp).toLocaleString()}</p>
+            <p><strong>Last Updated:</strong> {timestamp ? new Date(timestamp).toLocaleString() : "N/A"}</p>
 
             <h3>Your Rides & Incoming Requests</h3>
-            {ridesWithRequests.length === 0 ? (
+            {Array.isArray(ridesWithRequests) && ridesWithRequests.length === 0 ? (
                 <p><i>No rides offered yet.</i></p>
             ) : (
-                ridesWithRequests.map((ride) => (
+                Array.isArray(ridesWithRequests) && ridesWithRequests.map((ride) => (
                     <div
                         key={ride.rideId}
                         style={{
@@ -123,7 +123,7 @@ export default function DriverDashboard() {
                         </button>
 
                         <h5>Accepted Passengers</h5>
-                        {ride.acceptedPassengers?.length > 0 ? (
+                        {Array.isArray(ride.acceptedPassengers) && ride.acceptedPassengers.length > 0 ? (
                             ride.acceptedPassengers.map((passenger) => (
                                 <div
                                     key={passenger.requestId}
@@ -143,10 +143,10 @@ export default function DriverDashboard() {
                         )}
 
                         <h5>Incoming Requests</h5>
-                        {ride.requests?.length === 0 ? (
+                        {Array.isArray(ride.requests) && ride.requests.length === 0 ? (
                             <p><i>No pending requests.</i></p>
                         ) : (
-                            ride.requests.map((req) => (
+                            Array.isArray(ride.requests) && ride.requests.map((req) => (
                                 <div
                                     key={req.requestId}
                                     style={{

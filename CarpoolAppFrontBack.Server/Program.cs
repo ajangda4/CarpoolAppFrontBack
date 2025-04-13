@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Text;
 using CarpoolApp.Server.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -12,7 +12,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
@@ -20,9 +19,10 @@ builder.Services.AddScoped<EmailService>();
 
 // Add DbContext with connection string
 builder.Services.AddDbContext<CarpoolDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("CarpoolDatabase"))
+    options.UseSqlite(builder.Configuration.GetConnectionString("CarpoolDatabase"))
 );
 
+// Add Authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -43,14 +43,32 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// Add Authorization
 builder.Services.AddAuthorization();
 
+// ----------------------------------------
+// 🔥 CORS Configuration
+var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+        policy =>
+        {
+            policy.WithOrigins("https://localhost:58562") // Your React frontend
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+// ----------------------------------------
+
 var app = builder.Build();
+
+// Middlewares
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -58,6 +76,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// ----------------------------------------
+// 🔥 CORS Middleware BEFORE Authentication
+app.UseCors(MyAllowSpecificOrigins);
+// ----------------------------------------
 
 app.UseAuthentication();
 app.UseAuthorization();
