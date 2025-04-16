@@ -19,28 +19,15 @@ export default function DriverDashboard() {
 
         const fetchData = async () => {
             try {
-                const res = await axios.get("/api/driverdashboard/rides-with-requests", {
+                const res = await axios.get("https://localhost:7161/api/driver/dashboard/rides-with-requests", {
                     headers: { Authorization: `Bearer ${token}` },
                 });
 
-                const rides = res.data.result;
-                const timestamp = res.data.timestamp;
+                const rides = Array.isArray(res.data.result) ? res.data.result : [];
+                const fetchedTimestamp = res.data.timestamp || new Date().toISOString();
 
-                const ridesWithAccepted = await Promise.all(
-                    Array.isArray(rides) ? rides.map(async (ride) => {
-                        const acceptedRes = await axios.get(
-                            `/api/ridemanagement/accepted-passengers/${ride.rideId}`,
-                            { headers: { Authorization: `Bearer ${token}` } }
-                        );
-                        return {
-                            ...ride,
-                            acceptedPassengers: acceptedRes.data,
-                        };
-                    }) : []
-                );
-
-                setRidesWithRequests(ridesWithAccepted);
-                setTimestamp(timestamp);
+                setRidesWithRequests(rides);
+                setTimestamp(fetchedTimestamp);
                 setLoading(false);
             } catch (error) {
                 console.error("Error loading dashboard:", error);
@@ -54,16 +41,31 @@ export default function DriverDashboard() {
     const handleRideRequest = async (requestId, action) => {
         const token = localStorage.getItem("token");
         try {
-            await axios.post(`/api/riderequest/${action}/${requestId}`, {}, {
+            await axios.post(`https://localhost:7161/api/riderequest/${action}/${requestId}`, {}, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
-            setRidesWithRequests(prev =>
-                prev.map(ride => ({
-                    ...ride,
-                    requests: Array.isArray(ride.requests) ? ride.requests.filter(req => req.requestId !== requestId) : []
-                }))
-            );
+            if (action === "accept") {
+                setRidesWithRequests(prevRides =>
+                    prevRides.map(ride => {
+                        const acceptedRequest = ride.requests.find(req => req.requestId === requestId);
+                        if (!acceptedRequest) return ride;
+
+                        return {
+                            ...ride,
+                            requests: ride.requests.filter(req => req.requestId !== requestId),
+                            acceptedPassengers: [...(ride.acceptedPassengers || []), acceptedRequest]
+                        };
+                    })
+                );
+            } else {
+                setRidesWithRequests(prevRides =>
+                    prevRides.map(ride => ({
+                        ...ride,
+                        requests: ride.requests.filter(req => req.requestId !== requestId)
+                    }))
+                );
+            }
         } catch (err) {
             console.error(`Error ${action}ing request:`, err.response?.data || err.message);
         }
@@ -72,7 +74,7 @@ export default function DriverDashboard() {
     const formatRoute = (origin, stops, destination) => {
         let parsedStops = [];
         try {
-            parsedStops = typeof stops === "string" ? JSON.parse(stops) : stops || [];
+            parsedStops = Array.isArray(stops) ? stops : [];
         } catch {
             parsedStops = [];
         }
@@ -82,16 +84,22 @@ export default function DriverDashboard() {
 
     if (loading) return <p>Loading dashboard...</p>;
 
+    if (!Array.isArray(ridesWithRequests)) {
+        console.error("ridesWithRequests is invalid:", ridesWithRequests);
+        return <p>Error loading rides. Please refresh.</p>;
+    }
+
     return (
         <div style={{ padding: "20px", maxWidth: "900px", margin: "0 auto" }}>
             <h2>Driver Dashboard</h2>
             <p><strong>Last Updated:</strong> {timestamp ? new Date(timestamp).toLocaleString() : "N/A"}</p>
 
-            <h3>Your Rides & Incoming Requests</h3>
-            {Array.isArray(ridesWithRequests) && ridesWithRequests.length === 0 ? (
+            <h3>Your Rides & Requests</h3>
+
+            {ridesWithRequests.length === 0 ? (
                 <p><i>No rides offered yet.</i></p>
             ) : (
-                Array.isArray(ridesWithRequests) && ridesWithRequests.map((ride) => (
+                ridesWithRequests.map((ride) => (
                     <div
                         key={ride.rideId}
                         style={{
@@ -102,18 +110,19 @@ export default function DriverDashboard() {
                         }}
                     >
                         <h4>Ride ID: {ride.rideId}</h4>
-                        <p><strong>Route:</strong> {formatRoute(ride.origin, ride.routestops, ride.destination)}</p>
+                        <p><strong>Route:</strong> {formatRoute(ride.origin, ride.routeStops, ride.destination)}</p>
                         <p><strong>Departure:</strong> {new Date(ride.departureTime).toLocaleString()}</p>
                         <p><strong>Vehicle:</strong> {ride.vehicle}</p>
                         <p><strong>Seats Available:</strong> {ride.availableSeats}</p>
                         <p><strong>Price per Seat:</strong> Rs. {ride.pricePerSeat}</p>
+
                         <button
                             onClick={() => navigate(`/chat/${ride.rideId}`)}
                             style={{
                                 marginTop: "10px",
                                 padding: "8px 12px",
                                 backgroundColor: "#007bff",
-                                color: "#fff",
+                                color: "white",
                                 border: "none",
                                 borderRadius: "4px",
                                 cursor: "pointer"
@@ -122,65 +131,112 @@ export default function DriverDashboard() {
                             Go to Messages
                         </button>
 
-                        <h5>Accepted Passengers</h5>
-                        {Array.isArray(ride.acceptedPassengers) && ride.acceptedPassengers.length > 0 ? (
-                            ride.acceptedPassengers.map((passenger) => (
-                                <div
-                                    key={passenger.requestId}
-                                    style={{
-                                        borderBottom: "1px solid #eee",
-                                        paddingBottom: "8px",
-                                        marginBottom: "8px"
-                                    }}
-                                >
-                                    <p><strong>Name:</strong> {passenger.passengerName}</p>
-                                    <p><strong>Pickup:</strong> {passenger.pickupLocation}</p>
-                                    <p><strong>Dropoff:</strong> {passenger.dropoffLocation}</p>
-                                </div>
-                            ))
-                        ) : (
-                            <p><i>No accepted passengers yet.</i></p>
-                        )}
-
-                        <h5>Incoming Requests</h5>
-                        {Array.isArray(ride.requests) && ride.requests.length === 0 ? (
-                            <p><i>No pending requests.</i></p>
-                        ) : (
-                            Array.isArray(ride.requests) && ride.requests.map((req) => (
+                        {/* Incoming Requests */}
+                        <h5 style={{ marginTop: "20px" }}>Incoming Requests</h5>
+                        {ride.requests?.length > 0 ? (
+                            ride.requests.map((req) => (
                                 <div
                                     key={req.requestId}
                                     style={{
                                         marginTop: "10px",
                                         padding: "10px",
                                         backgroundColor: "#f5f5f5",
-                                        borderRadius: "4px"
+                                        borderRadius: "4px",
+                                        color: "#222",
                                     }}
                                 >
                                     <p><strong>Passenger:</strong> {req.passengerName}</p>
                                     <p><strong>Pickup:</strong> {req.pickupLocation}</p>
                                     <p><strong>Dropoff:</strong> {req.dropoffLocation}</p>
-                                    <button
-                                        onClick={() => handleRideRequest(req.requestId, "accept")}
-                                        style={{ marginRight: "10px" }}
-                                    >
-                                        Accept
-                                    </button>
-                                    <button
-                                        onClick={() => handleRideRequest(req.requestId, "reject")}
-                                        style={{ background: "red", color: "white" }}
-                                    >
-                                        Reject
-                                    </button>
+                                    <div style={{ marginTop: "8px" }}>
+                                        <button
+                                            onClick={() => handleRideRequest(req.requestId, "accept")}
+                                            style={{
+                                                marginRight: "10px",
+                                                padding: "6px 12px",
+                                                backgroundColor: "#28a745",
+                                                color: "white",
+                                                border: "none",
+                                                borderRadius: "4px",
+                                                cursor: "pointer"
+                                            }}
+                                        >
+                                            Accept
+                                        </button>
+                                        <button
+                                            onClick={() => handleRideRequest(req.requestId, "reject")}
+                                            style={{
+                                                padding: "6px 12px",
+                                                backgroundColor: "#dc3545",
+                                                color: "white",
+                                                border: "none",
+                                                borderRadius: "4px",
+                                                cursor: "pointer"
+                                            }}
+                                        >
+                                            Reject
+                                        </button>
+                                    </div>
                                 </div>
                             ))
+                        ) : (
+                            <p><i>No pending requests.</i></p>
+                        )}
+
+                        {/* Upcoming Confirmed Passengers */}
+                        <h5 style={{ marginTop: "20px" }}>Upcoming Passengers</h5>
+                        {ride.acceptedPassengers?.length > 0 ? (
+                            ride.acceptedPassengers.map((passenger, idx) => (
+                                <div
+                                    key={idx}
+                                    style={{
+                                        marginTop: "10px",
+                                        padding: "10px",
+                                        backgroundColor: "#d4edda",
+                                        borderRadius: "4px",
+                                        color: "#155724",
+                                        border: "1px solid #c3e6cb",
+                                    }}
+                                >
+                                    <p><strong>Passenger:</strong> {passenger.passengerName}</p>
+                                    <p><strong>Pickup:</strong> {passenger.pickupLocation}</p>
+                                    <p><strong>Dropoff:</strong> {passenger.dropoffLocation}</p>
+                                </div>
+                            ))
+                        ) : (
+                            <p><i>No confirmed passengers yet.</i></p>
                         )}
                     </div>
                 ))
             )}
 
             <div style={{ marginTop: "30px", display: "flex", gap: "12px" }}>
-                <button onClick={() => navigate("/create-ride")}>Create Ride</button>
-                <button onClick={() => navigate("/driver-profile")}>View Profile / Manage Vehicles</button>
+                <button
+                    onClick={() => navigate("/create-ride")}
+                    style={{
+                        padding: "10px 16px",
+                        backgroundColor: "#007bff",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer"
+                    }}
+                >
+                    Create Ride
+                </button>
+                <button
+                    onClick={() => navigate("/driver-profile")}
+                    style={{
+                        padding: "10px 16px",
+                        backgroundColor: "#6c757d",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: "pointer"
+                    }}
+                >
+                    View Profile / Manage Vehicles
+                </button>
             </div>
         </div>
     );

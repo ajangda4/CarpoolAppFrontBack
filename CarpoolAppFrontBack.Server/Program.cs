@@ -1,28 +1,55 @@
-﻿using System;
-using System.Text;
+﻿using System.Text;
 using CarpoolApp.Server.Data;
+using CarpoolApp.Server.Hubs;
+using CarpoolApp.Server.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using CarpoolApp.Server.Hubs;
-using CarpoolApp.Server.Services;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
+// Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// Swagger + JWT Authorization Support
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "CarpoolApp API", Version = "v1" });
+
+    var jwtSecurityScheme = new OpenApiSecurityScheme
+    {
+        BearerFormat = "JWT",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        Description = "Put **_ONLY_** your JWT Bearer token below.",
+
+        Reference = new OpenApiReference
+        {
+            Id = JwtBearerDefaults.AuthenticationScheme,
+            Type = ReferenceType.SecurityScheme
+        }
+    };
+
+    c.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        { jwtSecurityScheme, Array.Empty<string>() }
+    });
+});
+
 builder.Services.AddSignalR();
 builder.Services.AddScoped<EmailService>();
 
-// Add DbContext with connection string
+// Database
 builder.Services.AddDbContext<CarpoolDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("CarpoolDatabase"))
 );
 
-// Add Authentication
+// Authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -38,34 +65,29 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
     };
 });
 
-// Add Authorization
+// Authorization
 builder.Services.AddAuthorization();
 
-// ----------------------------------------
-// 🔥 CORS Configuration
+// CORS
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-        policy =>
-        {
-            policy.WithOrigins("https://localhost:58562") // Your React frontend
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-        });
+    options.AddPolicy(name: MyAllowSpecificOrigins, policy =>
+    {
+        policy.WithOrigins("https://localhost:58562")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
 });
-// ----------------------------------------
 
 var app = builder.Build();
 
 // Middlewares
-
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
@@ -76,12 +98,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// ----------------------------------------
-// 🔥 CORS Middleware BEFORE Authentication
 app.UseCors(MyAllowSpecificOrigins);
-// ----------------------------------------
-
 app.UseAuthentication();
 app.UseAuthorization();
 

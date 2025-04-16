@@ -30,17 +30,26 @@ namespace CarpoolApp.Server.Controllers.Passenger
 
             query = query.Trim().ToLower();
 
-            var matchingRides = _context.Rides
+            var rides = _context.Rides
                 .Include(r => r.Driver)
                     .ThenInclude(d => d.User)
                 .Include(r => r.Vehicle)
-                .Where(r => r.Status == RideStatus.Scheduled && r.AvailableSeats > 0)
-                .AsEnumerable()
+                .Include(r => r.RideRequests)
                 .Where(r =>
-                    r.Origin.ToLower().Contains(query) ||
-                    r.Destination.ToLower().Contains(query) ||
-                    (r.RouteStops != null && JsonSerializer.Deserialize<List<string>>(r.RouteStops)?
-                        .Any(stop => stop.ToLower().Contains(query)) == true)
+                    r.Status == RideStatus.Scheduled &&
+                    r.DepartureTime >= DateTime.Now
+                )
+                .ToList()
+                .Where(r =>
+                    r.AvailableSeats >
+                        r.RideRequests.Count(rr => rr.Status == RideRequestStatus.Accepted) &&
+                    (
+                        r.Origin.ToLower().Contains(query) ||
+                        r.Destination.ToLower().Contains(query) ||
+                        (r.RouteStops != null &&
+                            JsonSerializer.Deserialize<List<string>>(r.RouteStops)?
+                                .Any(stop => stop.ToLower().Contains(query)) == true)
+                    )
                 )
                 .Select(r => new RideSearchResultDto
                 {
@@ -48,7 +57,7 @@ namespace CarpoolApp.Server.Controllers.Passenger
                     Origin = r.Origin,
                     Destination = r.Destination,
                     DepartureTime = r.DepartureTime.ToString("o"),
-                    AvailableSeats = r.AvailableSeats,
+                    AvailableSeats = r.AvailableSeats - r.RideRequests.Count(rr => rr.Status == RideRequestStatus.Accepted),
                     PricePerSeat = r.PricePerSeat,
                     DriverName = r.Driver?.User?.FullName ?? "Unknown Driver",
                     VehicleModel = r.Vehicle?.Model ?? "Unknown Vehicle",
@@ -58,10 +67,11 @@ namespace CarpoolApp.Server.Controllers.Passenger
                 })
                 .ToList();
 
-            if (!matchingRides.Any())
+            if (!rides.Any())
                 return NotFound("No rides found for the given search term.");
 
-            return Ok(matchingRides);
+            return Ok(rides);
         }
+
     }
 }

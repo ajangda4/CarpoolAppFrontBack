@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using CarpoolApp.Server.Data;
@@ -80,7 +80,7 @@ namespace CarpoolApp.Server.Controllers.Passenger
                 {
                     routeStops = JsonSerializer.Deserialize<List<string>>(ride.RouteStops);
                 }
-                catch (Exception ex)
+                catch(Exception ex) 
                 {
                     Console.WriteLine(ex);
                 }
