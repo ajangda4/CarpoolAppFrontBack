@@ -45,41 +45,35 @@ export default function DriverDashboard() {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
-            if (action === "accept") {
-                setRidesWithRequests(prevRides =>
-                    prevRides.map(ride => {
-                        const acceptedRequest = ride.requests.find(req => req.requestId === requestId);
-                        if (!acceptedRequest) return ride;
+            setRidesWithRequests(prevRides =>
+                prevRides.map(ride => {
+                    const match = ride.requests.find(req => req.requestId === requestId);
+                    if (!match) return ride;
 
+                    const updatedRequests = ride.requests.filter(req => req.requestId !== requestId);
+
+                    if (action === "accept") {
                         return {
                             ...ride,
-                            requests: ride.requests.filter(req => req.requestId !== requestId),
-                            acceptedPassengers: [...(ride.acceptedPassengers || []), acceptedRequest]
+                            requests: updatedRequests,
+                            acceptedPassengers: [...(ride.acceptedPassengers || []), match]
                         };
-                    })
-                );
-            } else {
-                setRidesWithRequests(prevRides =>
-                    prevRides.map(ride => ({
-                        ...ride,
-                        requests: ride.requests.filter(req => req.requestId !== requestId)
-                    }))
-                );
-            }
+                    } else {
+                        return {
+                            ...ride,
+                            requests: updatedRequests
+                        };
+                    }
+                })
+            );
         } catch (err) {
             console.error(`Error ${action}ing request:`, err.response?.data || err.message);
         }
     };
 
     const formatRoute = (origin, stops, destination) => {
-        let parsedStops = [];
-        try {
-            parsedStops = Array.isArray(stops) ? stops : [];
-        } catch {
-            parsedStops = [];
-        }
-        const fullRoute = [origin, ...parsedStops, destination];
-        return fullRoute.join(" → ");
+        let parsedStops = Array.isArray(stops) ? stops : [];
+        return [origin, ...parsedStops, destination].join(" → ");
     };
 
     if (loading) return <p>Loading dashboard...</p>;
@@ -99,115 +93,123 @@ export default function DriverDashboard() {
             {ridesWithRequests.length === 0 ? (
                 <p><i>No rides offered yet.</i></p>
             ) : (
-                ridesWithRequests.map((ride) => (
-                    <div
-                        key={ride.rideId}
-                        style={{
-                            border: "1px solid #ccc",
-                            borderRadius: "8px",
-                            padding: "16px",
-                            marginBottom: "24px"
-                        }}
-                    >
-                        <h4>Ride ID: {ride.rideId}</h4>
-                        <p><strong>Route:</strong> {formatRoute(ride.origin, ride.routeStops, ride.destination)}</p>
-                        <p><strong>Departure:</strong> {new Date(ride.departureTime).toLocaleString()}</p>
-                        <p><strong>Vehicle:</strong> {ride.vehicle}</p>
-                        <p><strong>Seats Available:</strong> {ride.availableSeats}</p>
-                        <p><strong>Price per Seat:</strong> Rs. {ride.pricePerSeat}</p>
+                ridesWithRequests.map((ride) => {
+                    const goingToHabib = ride.destination.toLowerCase().includes("habib university");
 
-                        <button
-                            onClick={() => navigate(`/chat/${ride.rideId}`)}
+                    return (
+                        <div
+                            key={ride.rideId}
                             style={{
-                                marginTop: "10px",
-                                padding: "8px 12px",
-                                backgroundColor: "#007bff",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "4px",
-                                cursor: "pointer"
+                                border: "1px solid #ccc",
+                                borderRadius: "8px",
+                                padding: "16px",
+                                marginBottom: "24px"
                             }}
                         >
-                            Go to Messages
-                        </button>
+                            <h4>Ride ID: {ride.rideId}</h4>
+                            <p><strong>Route:</strong> {formatRoute(ride.origin, ride.routeStops, ride.destination)}</p>
+                            <p><strong>Departure:</strong> {new Date(ride.departureTime + 'Z').toLocaleString()}</p>
+                            <p><strong>Vehicle:</strong> {ride.vehicle}</p>
+                            <p><strong>Seats Available:</strong> {ride.availableSeats}</p>
+                            <p><strong>Price per Seat:</strong> Rs. {ride.pricePerSeat}</p>
 
-                        {/* Incoming Requests */}
-                        <h5 style={{ marginTop: "20px" }}>Incoming Requests</h5>
-                        {ride.requests?.length > 0 ? (
-                            ride.requests.map((req) => (
-                                <div
-                                    key={req.requestId}
-                                    style={{
-                                        marginTop: "10px",
-                                        padding: "10px",
-                                        backgroundColor: "#f5f5f5",
-                                        borderRadius: "4px",
-                                        color: "#222",
-                                    }}
-                                >
-                                    <p><strong>Passenger:</strong> {req.passengerName}</p>
-                                    <p><strong>Pickup:</strong> {req.pickupLocation}</p>
-                                    <p><strong>Dropoff:</strong> {req.dropoffLocation}</p>
-                                    <div style={{ marginTop: "8px" }}>
-                                        <button
-                                            onClick={() => handleRideRequest(req.requestId, "accept")}
-                                            style={{
-                                                marginRight: "10px",
-                                                padding: "6px 12px",
-                                                backgroundColor: "#28a745",
-                                                color: "white",
-                                                border: "none",
-                                                borderRadius: "4px",
-                                                cursor: "pointer"
-                                            }}
-                                        >
-                                            Accept
-                                        </button>
-                                        <button
-                                            onClick={() => handleRideRequest(req.requestId, "reject")}
-                                            style={{
-                                                padding: "6px 12px",
-                                                backgroundColor: "#dc3545",
-                                                color: "white",
-                                                border: "none",
-                                                borderRadius: "4px",
-                                                cursor: "pointer"
-                                            }}
-                                        >
-                                            Reject
-                                        </button>
+                            <button
+                                onClick={() => navigate(`/chat/${ride.rideId}`)}
+                                style={{
+                                    marginTop: "10px",
+                                    padding: "8px 12px",
+                                    backgroundColor: "#007bff",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    cursor: "pointer"
+                                }}
+                            >
+                                Go to Messages
+                            </button>
+
+                            {/* Incoming Requests */}
+                            <h5 style={{ marginTop: "20px" }}>Incoming Requests</h5>
+                            {ride.requests?.length > 0 ? (
+                                ride.requests.map((req) => (
+                                    <div
+                                        key={req.requestId}
+                                        style={{
+                                            marginTop: "10px",
+                                            padding: "10px",
+                                            backgroundColor: "#f5f5f5",
+                                            borderRadius: "4px",
+                                            color: "#222",
+                                        }}
+                                    >
+                                        <p><strong>Passenger:</strong> {req.passengerName}</p>
+                                        <p>
+                                            <strong>{goingToHabib ? "Pickup" : "Dropoff"}:</strong>{" "}
+                                            {goingToHabib ? req.pickupLocation : req.dropoffLocation}
+                                        </p>
+                                        <div style={{ marginTop: "8px" }}>
+                                            <button
+                                                onClick={() => handleRideRequest(req.requestId, "accept")}
+                                                style={{
+                                                    marginRight: "10px",
+                                                    padding: "6px 12px",
+                                                    backgroundColor: "#28a745",
+                                                    color: "white",
+                                                    border: "none",
+                                                    borderRadius: "4px",
+                                                    cursor: "pointer"
+                                                }}
+                                            >
+                                                Accept
+                                            </button>
+                                            <button
+                                                onClick={() => handleRideRequest(req.requestId, "reject")}
+                                                style={{
+                                                    padding: "6px 12px",
+                                                    backgroundColor: "#dc3545",
+                                                    color: "white",
+                                                    border: "none",
+                                                    borderRadius: "4px",
+                                                    cursor: "pointer"
+                                                }}
+                                            >
+                                                Reject
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            ))
-                        ) : (
-                            <p><i>No pending requests.</i></p>
-                        )}
+                                ))
+                            ) : (
+                                <p><i>No pending requests.</i></p>
+                            )}
 
-                        {/* Upcoming Confirmed Passengers */}
-                        <h5 style={{ marginTop: "20px" }}>Upcoming Passengers</h5>
-                        {ride.acceptedPassengers?.length > 0 ? (
-                            ride.acceptedPassengers.map((passenger, idx) => (
-                                <div
-                                    key={idx}
-                                    style={{
-                                        marginTop: "10px",
-                                        padding: "10px",
-                                        backgroundColor: "#d4edda",
-                                        borderRadius: "4px",
-                                        color: "#155724",
-                                        border: "1px solid #c3e6cb",
-                                    }}
-                                >
-                                    <p><strong>Passenger:</strong> {passenger.passengerName}</p>
-                                    <p><strong>Pickup:</strong> {passenger.pickupLocation}</p>
-                                    <p><strong>Dropoff:</strong> {passenger.dropoffLocation}</p>
-                                </div>
-                            ))
-                        ) : (
-                            <p><i>No confirmed passengers yet.</i></p>
-                        )}
-                    </div>
-                ))
+                            {/* Accepted Passengers */}
+                            <h5 style={{ marginTop: "20px" }}>Upcoming Passengers</h5>
+                            {ride.acceptedPassengers?.length > 0 ? (
+                                ride.acceptedPassengers.map((passenger, idx) => (
+                                    <div
+                                        key={idx}
+                                        style={{
+                                            marginTop: "10px",
+                                            padding: "10px",
+                                            backgroundColor: "#d4edda",
+                                            borderRadius: "4px",
+                                            color: "#155724",
+                                            border: "1px solid #c3e6cb",
+                                        }}
+                                    >
+                                        <p><strong>Passenger:</strong> {passenger.passengerName}</p>
+                                        <p>
+                                            <strong>{goingToHabib ? "Pickup" : "Dropoff"}:</strong>{" "}
+                                            {goingToHabib ? passenger.pickupLocation : passenger.dropoffLocation}
+                                        </p>
+                                    </div>
+                                ))
+                            ) : (
+                                <p><i>No confirmed passengers yet.</i></p>
+                            )}
+                        </div>
+                    );
+                })
             )}
 
             <div style={{ marginTop: "30px", display: "flex", gap: "12px" }}>

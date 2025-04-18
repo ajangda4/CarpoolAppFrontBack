@@ -18,7 +18,7 @@ function App() {
                 <Route path="/passenger-dashboard" element={<PassengerDashboard />} />
                 <Route path="/driver-profile" element={<DriverProfile />} />
                 <Route path="/create-ride" element={<CreateRidePage />} />
-                <Route path="/passenger/profile" element={<PassengerProfile />} />
+                <Route path="/passenger-profile" element={<PassengerProfile />} />
                 <Route path="/chat/:rideId" element={<ChatPage />} />
             </Routes>
         </Router>

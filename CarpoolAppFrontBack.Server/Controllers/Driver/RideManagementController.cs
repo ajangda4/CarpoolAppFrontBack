@@ -45,7 +45,7 @@ namespace CarpoolApp.Server.Controllers.Driver
                 Origin = dto.Origin,
                 Destination = dto.Destination,
                 RouteStops = JsonSerializer.Serialize(dto.RouteStops),
-                DepartureTime = dto.DepartureTime.ToUniversalTime(),
+                DepartureTime = dto.DepartureTime,
                 VehicleId = dto.VehicleId,
                 DriverId = driver.DriverId,
                 AvailableSeats = dto.AvailableSeats,

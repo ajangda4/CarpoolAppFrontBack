@@ -1,2 +1,158 @@
-body {
+﻿/* Root container: centers everything */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    width: 100%;
+    background-color: #f0f2f5;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+/* Login card */
+.login-screen {
+    background: white;
+    width: 100%;
+    max-width: 420px;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.login-screen-body {
+    padding: 24px;
+}
+
+/* Header styling */
+.login-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.login-app-logo {
+    width: 80px;
+    height: 80px;
+    background: #d0d7de;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+}
+
+/* Form fields */
+.login-form-group {
+    margin-bottom: 16px;
+}
+
+.login-form-label {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    display: block;
+    color: #57606a;
+}
+
+.login-input-field {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 14px;
+    background: #f4f6f8;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+    .login-input-field::placeholder {
+        color: #57606a;
+        opacity: 0.8;
+    }
+
+/* Role toggle buttons */
+.login-role-container {
+    display: flex;
+    gap: 8px;
+}
+
+.login-role-button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 500;
+    border: 1px solid #d0d7de;
+    background: #f4f6f8;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+    .login-role-button.active {
+        background-color: #3498db;
+        color: white;
+        border-color: #3498db;
+    }
+
+/* Action buttons */
+.login-action-buttons {
+    display: flex;
+    gap: 8px;
+    margin: 24px 0 16px;
+}
+
+.login-button,
+.signup-button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.login-button {
+    background-color: #3498db;
+    border: none;
+    color: white;
+}
+
+.signup-button {
+    background: transparent;
+    color: #3498db;
+    border: 1px solid #3498db;
+}
+
+.login-forgot-password {
+    text-align: center;
+    margin-top: 8px;
+}
+
+    .login-forgot-password a {
+        color: #3498db;
+        font-size: 14px;
+        text-decoration: none;
+    }
+
+/* Responsive fix for mobile */
+@media (max-width: 480px) {
+    .login-screen-body {
+        padding: 16px;
+    }
+
+    .login-header h2 {
+        font-size: 20px;
+    }
+
+    .login-app-logo {
+        width: 64px;
+        height: 64px;
+    }
+}
+
+
+@media (min-width: 768px) {
+    .login-screen {
+        max-width: 480px; /* ⬅ slightly larger */
+    }
+}
+
+@media (min-width: 1024px) {
+    .login-screen {
+        max-width: 520px; /* ⬅ even better for big screens */
+    }
 }

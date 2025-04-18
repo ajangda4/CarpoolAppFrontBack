@@ -1,3 +1,16 @@
+/* Force light background across full page */
+/*html, body, #root {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: #f0f2f5 !important;*/ /* override dark mode */
+    /*overflow-x: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}*/
+
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

@@ -39,7 +39,8 @@ namespace CarpoolApp.Server.Controllers.Passenger
                 .Where(r =>
                     r.Status == RideStatus.Scheduled &&
                     r.DepartureTime > DateTime.Now &&
-                    r.AvailableSeats > r.RideRequests.Count(rr => rr.Status == RideRequestStatus.Accepted)
+                    r.AvailableSeats > r.RideRequests.Count(rr => rr.Status == RideRequestStatus.Accepted) &&
+                    !_context.RideRequests.Any(rr => rr.RideId == r.RideId && rr.PassengerId == passenger.PassengerId && rr.Status == RideRequestStatus.Accepted)
                 )
                 .AsEnumerable()
                 .Select(r => new
@@ -51,7 +52,7 @@ namespace CarpoolApp.Server.Controllers.Passenger
                     AvailableSeats = r.AvailableSeats - r.RideRequests.Count(rr => rr.Status == RideRequestStatus.Accepted),
                     r.PricePerSeat,
                     DriverName = r.Driver?.User?.FullName ?? "Unknown Driver",
-                    VehicleModel = r.Vehicle?.Model ?? "Unknown Vehicle",
+                    Vehicle = r.Vehicle != null ? $"{r.Vehicle.Make} {r.Vehicle.Model} - {r.Vehicle.NumberPlate}" : "Unknown Vehicle",
                     RouteStops = string.IsNullOrEmpty(r.RouteStops)
                         ? new List<string>()
                         : JsonSerializer.Deserialize<List<string>>(r.RouteStops),
@@ -93,7 +94,7 @@ namespace CarpoolApp.Server.Controllers.Passenger
                     r.AvailableSeats,
                     r.PricePerSeat,
                     DriverName = r.Driver?.User?.FullName ?? "Unknown Driver",
-                    VehicleModel = r.Vehicle?.Model ?? "Unknown Vehicle",
+                    Vehicle = r.Vehicle != null ? $"{r.Vehicle.Make} {r.Vehicle.Model} - {r.Vehicle.NumberPlate}" : "Unknown Vehicle",
                     RouteStops = string.IsNullOrEmpty(r.RouteStops)
                         ? new List<string>()
                         : JsonSerializer.Deserialize<List<string>>(r.RouteStops),
@@ -120,13 +121,14 @@ namespace CarpoolApp.Server.Controllers.Passenger
 
                 var rideRequest = new RideRequest
                 {
-                    PickupLocation = request.PickupLocation,
+                    PickupLocation = request.PickupLocation, // ✅ fixed!
                     DropoffLocation = request.DropoffLocation,
                     PassengerId = passenger.PassengerId,
                     RideId = request.RideId,
                     Status = RideRequestStatus.Pending,
                     RequestedAt = DateTime.UtcNow
                 };
+
 
                 _context.RideRequests.Add(rideRequest);
                 await _context.SaveChangesAsync();
@@ -140,3 +142,5 @@ namespace CarpoolApp.Server.Controllers.Passenger
         }
     }
 }
+
+

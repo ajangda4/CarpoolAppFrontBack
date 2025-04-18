@@ -49,7 +49,7 @@ namespace CarpoolApp.Server.Controllers.Driver
                     departureTime = r.DepartureTime,
                     availableSeats = r.AvailableSeats,
                     pricePerSeat = r.PricePerSeat,
-                    vehicle = r.Vehicle != null ? $"{r.Vehicle.Make} {r.Vehicle.Model}" : "No Vehicle",
+                    vehicle = r.Vehicle != null ? $"{r.Vehicle.Make} {r.Vehicle.Model} - {r.Vehicle.NumberPlate}" : "No Vehicle",
                     routeStops = string.IsNullOrEmpty(r.RouteStops)
                         ? new List<string>()
                         : JsonSerializer.Deserialize<List<string>>(r.RouteStops),
@@ -58,6 +58,7 @@ namespace CarpoolApp.Server.Controllers.Driver
                     requests = (r.RideRequests ?? new List<RideRequest>())
                         .Where(req => req.Status == RideRequestStatus.Pending)
                         .Select(req => new
+                            
                         {
                             requestId = req.RideRequestId,
                             pickupLocation = req.PickupLocation,
