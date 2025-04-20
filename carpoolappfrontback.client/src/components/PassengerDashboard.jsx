@@ -3,11 +3,13 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
+import "../styles/PassengerDashboard.css";
 
 export default function PassengerDashboard() {
     const [availableRides, setAvailableRides] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
+    const [timestamp, setTimestamp] = useState(""); // ✅ Timestamp state added
     const [selectedRideId, setSelectedRideId] = useState(null);
     const [selectedLocation, setSelectedLocation] = useState("");
     const [customLocation, setCustomLocation] = useState("");
@@ -30,6 +32,7 @@ export default function PassengerDashboard() {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setAvailableRides(res.data);
+                setTimestamp(new Date().toISOString()); // ✅ Set timestamp when rides are fetched
             } catch (err) {
                 console.error("Error fetching rides:", err);
             } finally {
@@ -77,164 +80,131 @@ export default function PassengerDashboard() {
         }
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        navigate("/");
+    };
 
     if (loading) return <p>Loading available rides...</p>;
 
     return (
-        <div style={{ padding: "20px", maxWidth: "900px", margin: "0 auto" }}>
+        <div className="create-ride-wrapper">
             <ToastContainer position="top-center" autoClose={2500} hideProgressBar />
-            <h2>Passenger Dashboard</h2>
+            <div className="dashboard-header">
+                <h2 className="blue-heading">Passenger Dashboard</h2>
+                <button className="logout-button" onClick={handleLogout}>Logout</button>
+            </div>
 
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "20px" }}>
-                <h3 style={{ margin: 0 }}>Available Rides</h3>
+            {/* ✅ Timestamp UI */}
+            <p><strong className="blue-label">Last Updated:</strong> {timestamp ? new Date(timestamp).toLocaleString() : "N/A"}</p>
+
+            <div className="search-bar">
                 <input
                     type="text"
                     placeholder="Search origin, destination, or route"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{
-                        flex: 1,
-                        minWidth: "220px",
-                        padding: "6px",
-                        border: "1px solid #ccc",
-                        borderRadius: "4px"
-                    }}
                 />
-                <button
-                    onClick={() => navigate("/passenger-profile")}
-                    style={{
-                        padding: "8px 12px",
-                        backgroundColor: "#007bff",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer"
-                    }}
-                >
-                    My Ride History
+                <button onClick={() => navigate("/passenger-profile")}>
+                    View accepted/previous rides
                 </button>
             </div>
 
-
             {availableRides.length === 0 ? (
-                <p><i>No rides available right now.</i></p>
+                <p className="no-rides"><i>No rides available right now.</i></p>
             ) : (
-                    availableRides.filter((ride) =>
+                availableRides
+                    .filter((ride) =>
                         ride.origin.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         ride.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         (Array.isArray(ride.routeStops) && ride.routeStops.some(stop =>
                             stop.toLowerCase().includes(searchTerm.toLowerCase())
                         ))
-                    ).map((ride) => (
-                    <div
-                        key={ride.rideId}
-                        style={{
-                            border: "1px solid #ccc",
-                            borderRadius: "8px",
-                            padding: "16px",
-                            marginBottom: "24px"
-                        }}
-                    >
-                        <p><strong>From:</strong> {ride.origin}</p>
-                        <p><strong>To:</strong> {ride.destination}</p>
-                        <p><strong>Departure:</strong> {new Date(ride.departureTime + 'Z').toLocaleString()}</p>
-                        <p><strong>Available Seats:</strong> {ride.availableSeats}</p>
-                        <p><strong>Price per Seat:</strong> Rs. {ride.pricePerSeat}</p>
-                        <p><strong>Driver:</strong> {ride.driverName}</p>
-                        <p><strong>Vehicle:</strong> {ride.vehicle}</p>
+                    ).map((ride) => {
+                        const formattedTime = new Date(ride.departureTime + 'Z').toLocaleString();
+                        return (
+                            <div key={ride.rideId} className="ride-card-v2">
+                                <div className="ride-header">
+                                    <div className="driver-name">{ride.driverName}</div>
+                                    <span className="driver-badge">Driver</span>
+                                </div>
 
-                        {ride.routeStops.length > 0 && (
-                            <p><strong>Route Stops:</strong> {ride.routeStops.join(" → ")}</p>
-                        )}
+                                <div className="ride-path">
+                                    <div className="path-label"><strong>Route:</strong></div>
+                                    <div className="route-visual">
+                                        <div className="stop-node">
+                                            <div className="dot start-dot"></div>
+                                            <div className="stop-label">{ride.origin}</div>
+                                        </div>
+                                        {ride.routeStops.map((stop, idx) => (
+                                            <React.Fragment key={idx}>
+                                                <div className="line"></div>
+                                                <div className="stop-node">
+                                                    <div className="dot stop-dot"></div>
+                                                    <div className="stop-label">{stop}</div>
+                                                </div>
+                                            </React.Fragment>
+                                        ))}
+                                        <div className="line"></div>
+                                        <div className="stop-node">
+                                            <div className="dot end-dot"></div>
+                                            <div className="stop-label">{ride.destination}</div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <p><strong>Your Request Status:</strong> {ride.rideRequestStatus}</p>
+                                <div className="ride-details">
+                                    <p><strong>Departure:</strong> {formattedTime}</p>
+                                    <p><strong>Vehicle:</strong> {ride.vehicle}</p>
+                                    <p><strong>Available Seats:</strong> {ride.availableSeats}</p>
+                                    <p><strong>Price per Seat:</strong> Rs. {ride.pricePerSeat}</p>
+                                    <p><strong>Your Request Status:</strong> {ride.rideRequestStatus}</p>
+                                </div>
 
-                        {ride.availableSeats === 0 ? (
-                            <span style={{ color: "gray", fontStyle: "italic" }}>Ride is Full</span>
-                        ) : ride.rideRequestStatus === "Not Requested" ? (
-                            <button
-                                onClick={() => openModal(ride)}
-                                style={{
-                                    marginTop: "10px",
-                                    padding: "8px 12px",
-                                    backgroundColor: "#28a745",
-                                    color: "white",
-                                    border: "none",
-                                    borderRadius: "4px",
-                                    cursor: "pointer"
-                                }}
-                            >
-                                Request Ride
-                            </button>
-                        ) : null}
+                                {ride.availableSeats === 0 ? (
+                                    <span className="no-rides-message">Ride is Full</span>
+                                ) : ride.rideRequestStatus === "Not Requested" ? (
+                                    <button className="request-button" onClick={() => openModal(ride)}>Request Ride</button>
+                                ) : null}
 
-                        {showModal && selectedRideId === ride.rideId && (
-                            <div style={{
-                                marginTop: "16px",
-                                padding: "12px",
-                                border: "1px dashed gray",
-                                borderRadius: "6px",
-                                backgroundColor: "#f9f9f9"
-                            }}>
-                                <label style={{ color: "#000" }}>
-                                    <strong>Select {isPickupMode ? "Pickup" : "Dropoff"} Location:</strong>
-                                </label><br />
-<br />
-                                <select
-                                    value={selectedLocation}
-                                    onChange={(e) => {
-                                        setSelectedLocation(e.target.value);
-                                        if (e.target.value !== "custom") {
-                                            setCustomLocation("");
-                                        }
-                                    }}
-                                    style={{ padding: "6px", marginTop: "8px", width: "100%" }}
-                                >
-                                    <option value="">-- Select --</option>
-                                    {(isPickupMode
-                                        ? [ride.origin, ...ride.routeStops]
-                                        : [...ride.routeStops, ride.destination]
-                                    ).map((stop, idx) => (
-                                        <option key={idx} value={stop}>{stop}</option>
-                                    ))}
-                                    <option value="custom">Other (type manually)</option>
-                                </select>
+                                {showModal && selectedRideId === ride.rideId && (
+                                    <div className="form-group">
+                                        <label>Select {isPickupMode ? "Pickup" : "Dropoff"} Location:</label>
+                                        <select
+                                            value={selectedLocation}
+                                            onChange={(e) => {
+                                                setSelectedLocation(e.target.value);
+                                                if (e.target.value !== "custom") setCustomLocation("");
+                                            }}
+                                        >
+                                            <option value="">-- Select --</option>
+                                            {(isPickupMode
+                                                ? [ride.origin, ...ride.routeStops]
+                                                : [...ride.routeStops, ride.destination]
+                                            ).map((stop, idx) => (
+                                                <option key={idx} value={stop}>{stop}</option>
+                                            ))}
+                                            <option value="custom">Other (type manually)</option>
+                                        </select>
 
+                                        {selectedLocation === "custom" && (
+                                            <input
+                                                type="text"
+                                                placeholder={`Enter custom ${isPickupMode ? "pickup" : "dropoff"} location`}
+                                                value={customLocation}
+                                                onChange={(e) => setCustomLocation(e.target.value)}
+                                            />
+                                        )}
 
-                                {selectedLocation === "custom" && (
-                                    <input
-                                        type="text"
-                                        placeholder={`Enter custom ${isPickupMode ? "pickup" : "dropoff"} location`}
-                                        value={customLocation}
-                                        onChange={(e) => setCustomLocation(e.target.value)}
-                                        style={{
-                                            marginTop: "10px",
-                                            padding: "8px",
-                                            width: "100%",
-                                            border: "1px solid #ccc",
-                                            borderRadius: "4px"
-                                        }}
-                                    />
+                                        <button className="request-button" onClick={handleRequestRide}>
+                                            Confirm Ride Request
+                                        </button>
+                                    </div>
                                 )}
-
-                                <button
-                                    onClick={handleRequestRide}
-                                    style={{
-                                        marginTop: "12px",
-                                        padding: "8px 12px",
-                                        backgroundColor: "#007bff",
-                                        color: "white",
-                                        border: "none",
-                                        borderRadius: "4px",
-                                        cursor: "pointer"
-                                    }}
-                                >
-                                    Confirm Ride Request
-                                </button>
                             </div>
-                        )}
-                    </div>
-                ))
+                        );
+                    })
             )}
         </div>
     );

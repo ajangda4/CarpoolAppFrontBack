@@ -37,7 +37,8 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="login-container">
+        <div className="login-wrapper">
+       
             <div className="login-screen">
                 <div className="login-screen-body">
                     <div className="login-header">
@@ -53,7 +54,7 @@ export default function LoginPage() {
                         <input
                             className="login-input-field"
                             type="email"
-                            placeholder="student@university.edu"
+                            placeholder="@st.habib.edu.pk"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             style={{ color: '#000' }}
@@ -103,7 +104,8 @@ export default function LoginPage() {
                         <a href="#">Forgot Password?</a>
                     </div>
                 </div>
-            </div>
+                </div>
+                
         </div>
     );
 }

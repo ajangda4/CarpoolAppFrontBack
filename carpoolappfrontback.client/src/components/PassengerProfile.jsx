@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import '../styles/PassengerProfile.css';
+
 
 export default function PassengerProfile() {
     const [upcomingRides, setUpcomingRides] = useState([]);
@@ -45,53 +47,89 @@ export default function PassengerProfile() {
 
         fetchAcceptedRides();
     }, [navigate]);
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("role");
+        navigate("/");
+    };
+
 
     if (loading) return <p>Loading your profile...</p>;
 
     const renderRideCard = (ride, index) => (
-        <div
-            key={index}
-            style={{
-                border: '1px solid #ccc',
-                borderRadius: '8px',
-                padding: '15px',
-                marginBottom: '20px'
-            }}
+        <div key={index} className="ride-history-card"
+            
         >
-            <h4>Ride ID: {ride.rideId}</h4>
-            <p><strong>From:</strong> {ride.origin}</p>
-            <p><strong>To:</strong> {ride.destination}</p>
+            <div className="ride-header">
+                <div className="driver-name">{ride.driverName}</div>
+                <span className="driver-badge">Driver</span>
+            </div>
+
+            <div className="route-path-box">
+                <div><strong>Route:</strong></div>
+                <div className="route-visual">
+                    {/* Origin */}
+                    <div className="stop-node">
+                        <div className="dot start-dot"></div>
+                        <div className="stop-label">{ride.origin}</div>
+                    </div>
+
+                    {/* Route Stops */}
+                    {ride.routeStops && ride.routeStops.map((stop, idx) => (
+                        <React.Fragment key={idx}>
+                            <div className="line"></div>
+                            <div className="stop-node">
+                                <div className="dot stop-dot"></div>
+                                <div className="stop-label">{stop}</div>
+                            </div>
+                        </React.Fragment>
+                    ))}
+
+                    {/* Destination */}
+                    <div className="line"></div>
+                    <div className="stop-node">
+                        <div className="dot end-dot"></div>
+                        <div className="stop-label">{ride.destination}</div>
+                    </div>
+                </div>
+            </div>
+
             <p><strong>Departure:</strong> {new Date(ride.departureTime + 'Z').toLocaleString()}</p>
             <p><strong>Vehicle:</strong> {ride.vehicle}</p>
             <p><strong>Driver:</strong> {ride.driverName}</p>
             <p><strong>Pickup:</strong> {ride.pickupLocation}</p>
             <p><strong>Dropoff:</strong> {ride.dropoffLocation}</p>
             <button
+                className="request-button"
                 onClick={() => navigate(`/chat/${ride.rideId}`)}
-                style={{ marginTop: "10px" }}
             >
                 Go to Messages
             </button>
+
         </div>
     );
-
     return (
-        <div style={{ padding: '20px' }}>
-            <h2>Passenger Profile</h2>
+        <div className="passenger-profile-wrapper">
+            <div className="dashboard-header">
+                <h2>Passenger Profile</h2>
+                <button className="logout-button" onClick={handleLogout}>Logout</button>
+            </div>
 
-            <h3>Upcoming Rides</h3>
+
+            <h3 className="section-title">Upcoming Rides</h3>
             {upcomingRides.length === 0 ? (
-                <p><i>No upcoming accepted rides.</i></p>
+                <p className="no-history"><i>No upcoming accepted rides.</i></p>
             ) : (
                 upcomingRides.map(renderRideCard)
             )}
 
-            <h3 style={{ marginTop: '40px' }}>Past Rides</h3>
+            <h3 className="section-title">Past Rides</h3>
             {pastRides.length === 0 ? (
-                <p><i>No past rides yet.</i></p>
+                <p className="no-history"><i>No past rides yet.</i></p>
             ) : (
                 pastRides.map(renderRideCard)
             )}
         </div>
     );
+
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import '../styles/DriverProfile.css';
 
 export default function DriverProfile() {
     const [vehicles, setVehicles] = useState([]);
@@ -51,7 +52,6 @@ export default function DriverProfile() {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            // After successful add, clear fields and reload vehicles
             setMake('');
             setModel('');
             setNumberPlate('');
@@ -63,10 +63,10 @@ export default function DriverProfile() {
     };
 
     return (
-        <div>
+        <div className="driver-profile-wrapper">
             <h2>Driver Profile</h2>
 
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+            {error && <p className="error-message">{error}</p>}
 
             <h3>Your Vehicles</h3>
             {loading ? (
@@ -87,21 +87,24 @@ export default function DriverProfile() {
 
             <h3>Add New Vehicle</h3>
             <input
+                className="input-field"
                 placeholder="Make"
                 value={make}
                 onChange={(e) => setMake(e.target.value)}
             />
             <input
+                className="input-field"
                 placeholder="Model"
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
             />
             <input
+                className="input-field"
                 placeholder="Number Plate"
                 value={numberPlate}
                 onChange={(e) => setNumberPlate(e.target.value)}
             />
-            <button onClick={handleAddVehicle}>Add Vehicle</button>
+            <button className="primary-button" onClick={handleAddVehicle}>Add Vehicle</button>
         </div>
     );
 }

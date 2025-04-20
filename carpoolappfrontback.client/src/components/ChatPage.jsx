@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import * as signalR from "@microsoft/signalr";
+import '../styles/ChatPage.css';
+
 
 export default function ChatPage() {
     const { rideId } = useParams();
@@ -120,56 +122,45 @@ export default function ChatPage() {
     };
 
     return (
-        <div style={{ padding: "20px", maxWidth: "700px", margin: "0 auto" }}>
-            <h2>Ride Chat Room (Ride #{rideId})</h2>
-
-            {error && <p style={{ color: "red" }}>{error}</p>}
-            {loading ? (
-                <p>Loading messages...</p>
-            ) : (
-                <div
-                    ref={scrollRef}
-                    style={{
-                        maxHeight: "400px",
-                        overflowY: "auto",
-                        border: "1px solid #ccc",
-                        padding: "10px",
-                        borderRadius: "6px",
-                        backgroundColor: "#f4f4f4",
-                        marginBottom: "20px"
-                    }}
-                >
-                    {messages.length === 0 ? (
-                        <p><i>No messages yet.</i></p>
-                    ) : (
-                        messages.map((msg) => (
-                            <div key={msg.messageId} style={{ marginBottom: "12px" }}>
-                                <strong>{msg.senderName}:</strong> {msg.content}
-                                <div style={{ fontSize: "12px", color: "#777" }}>
-                                    {new Date(msg.sentAt).toLocaleString()}
-                                </div>
-                            </div>
-                        ))
-                    )}
+        <div className="chat-page-wrapper">
+            <div className="chat-box">
+                <div className="chat-header">
+                    
+                    Ride Chat Room (Ride #{rideId})
                 </div>
-            )}
 
-            <form onSubmit={handleSendMessage} style={{ display: "flex", gap: "10px" }}>
-                <input
-                    type="text"
-                    placeholder="Type a message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    style={{
-                        flex: 1,
-                        padding: "10px",
-                        borderRadius: "4px",
-                        border: "1px solid #ccc"
-                    }}
-                />
-                <button type="submit">Send</button>
-            </form>
+                {error && <p style={{ color: "red", padding: "10px" }}>{error}</p>}
+                {loading ? (
+                    <p style={{ padding: "16px" }}>Loading messages...</p>
+                ) : (
+                    <div className="chat-messages" ref={scrollRef}>
+                        {messages.length === 0 ? (
+                            <p><i>No messages yet.</i></p>
+                        ) : (
+                            messages.map((msg) => (
+                                <div key={msg.messageId} className="message-bubble">
+                                    <strong>{msg.senderName}:</strong> {msg.content}
+                                    <div className="message-time">
+                                        {new Date(msg.sentAt).toLocaleString()}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+
+                <form className="chat-input-area" onSubmit={handleSendMessage}>
+                    <input
+                        type="text"
+                        placeholder="Type a message..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                    />
+                    <button type="submit">Send</button>
+                </form>
+            </div>
         </div>
     );
+
 }

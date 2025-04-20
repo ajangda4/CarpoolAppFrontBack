@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import '../styles/CreateRidePage.css';
 
 export default function CreateRidePage() {
     const [origin, setOrigin] = useState('');
@@ -93,105 +94,47 @@ export default function CreateRidePage() {
     };
 
     return (
-        <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-            <h2>Create Ride</h2>
+        <div className="create-ride-wrapper">
+            <h2 className="blue-heading">Create Ride</h2>
 
-            {error && (
-                <div style={{ color: 'red', marginBottom: '10px' }}>
-                    {error}
-                </div>
-            )}
 
-            <input
-                placeholder="Origin"
-                value={origin}
-                onChange={(e) => setOrigin(e.target.value)}
-                style={{ display: 'block', marginBottom: '10px', width: '100%' }}
-            />
-            <input
-                placeholder="Destination"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-                style={{ display: 'block', marginBottom: '10px', width: '100%' }}
-            />
+            {error && <div className="error-message">{error}</div>}
 
-            <div style={{ marginBottom: '10px' }}>
+            <div className="create-ride-form">
+                <input placeholder="Origin" value={origin} onChange={(e) => setOrigin(e.target.value)} />
+                <input placeholder="Destination" value={destination} onChange={(e) => setDestination(e.target.value)} />
+
                 <label>Route Stops (Optional):</label>
                 {routeStops.map((stop, index) => (
-                    <div key={index} style={{ marginBottom: '5px' }}>
-                        <input
-                            value={stop}
-                            onChange={(e) => handleRouteStopChange(index, e.target.value)}
-                            placeholder={`Stop ${index + 1}`}
-                            style={{ marginRight: '10px' }}
-                        />
-                        <button type="button" onClick={() => removeRouteStop(index)}>Remove</button>
+                    <div key={index} className="route-stop-group">
+                        <input value={stop} onChange={(e) => handleRouteStopChange(index, e.target.value)} placeholder={`Stop ${index + 1}`} />
+                        <button type="button" className="add-remove-stop-btn" onClick={() => removeRouteStop(index)}>Remove</button>
                     </div>
                 ))}
-                <button type="button" onClick={addRouteStop}>Add Stop</button>
-            </div>
+                <button type="button" className="add-route-stop" onClick={addRouteStop}>Add Stop</button>
 
-            <div style={{ marginBottom: '10px' }}>
                 <label>Departure Date & Time:</label>
-                <input
-                    type="datetime-local"
-                    value={departureTime}
-                    onChange={(e) => setDepartureTime(e.target.value)}
-                    style={{ display: 'block', width: '100%' }}
-                />
-            </div>
+                <input type="datetime-local" value={departureTime} onChange={(e) => setDepartureTime(e.target.value)} />
 
-            <div style={{ marginBottom: '10px' }}>
                 <label>Select Vehicle:</label>
                 {loadingVehicles ? (
                     <p>Loading vehicles...</p>
                 ) : (
-                    <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)} style={{ width: '100%' }}>
+                    <select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
                         <option value="">-- Select Vehicle --</option>
-                        {Array.isArray(vehicles) && vehicles.length > 0 ? (
-                            vehicles.map((v) => (
-                                <option key={v.vehicleId} value={v.vehicleId}>
-                                    {`${v.make} ${v.model} - ${v.numberPlate}`}
-                                </option>
-                            ))
-                        ) : (
-                            <option value="" disabled>No Vehicles Available</option>
-                        )}
+                        {vehicles.map((v) => (
+                            <option key={v.vehicleId} value={v.vehicleId}>
+                                {`${v.make} ${v.model} - ${v.numberPlate}`}
+                            </option>
+                        ))}
                     </select>
                 )}
+
+                <input type="number" placeholder="Available Seats" value={availableSeats} min={1} max={10} onChange={(e) => setAvailableSeats(e.target.value)} />
+                <input type="number" placeholder="Price Per Seat (PKR)" value={pricePerSeat} onChange={(e) => setPricePerSeat(e.target.value)} />
+
+                <button className="create-ride-button" onClick={handleSubmit}>Create Ride</button>
             </div>
-
-            <input
-                type="number"
-                placeholder="Available Seats"
-                value={availableSeats}
-                onChange={(e) => setAvailableSeats(e.target.value)}
-                min={1}
-                max={10}
-                style={{ display: 'block', marginBottom: '10px', width: '100%' }}
-            />
-
-            <input
-                type="number"
-                placeholder="Price Per Seat (PKR)"
-                value={pricePerSeat}
-                onChange={(e) => setPricePerSeat(e.target.value)}
-                style={{ display: 'block', marginBottom: '20px', width: '100%' }}
-            />
-
-            <button
-                onClick={handleSubmit}
-                style={{
-                    padding: "10px 15px",
-                    backgroundColor: "#28a745",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "5px",
-                    cursor: "pointer"
-                }}
-            >
-                Create Ride
-            </button>
         </div>
     );
 }
