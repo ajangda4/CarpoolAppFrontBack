@@ -97,8 +97,8 @@ export default function PassengerProfile() {
             <p><strong>Departure:</strong> {new Date(ride.departureTime + 'Z').toLocaleString()}</p>
             <p><strong>Vehicle:</strong> {ride.vehicle}</p>
             <p><strong>Driver:</strong> {ride.driverName}</p>
-            <p><strong>Pickup:</strong> {ride.pickupLocation}</p>
-            <p><strong>Dropoff:</strong> {ride.dropoffLocation}</p>
+            <p><strong>Your Pickup:</strong> {ride.pickupLocation}</p>
+            <p><strong>Your Dropoff:</strong> {ride.dropoffLocation}</p>
             <button
                 className="request-button"
                 onClick={() => navigate(`/chat/${ride.rideId}`)}

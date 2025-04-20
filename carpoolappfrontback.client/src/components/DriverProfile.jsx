@@ -64,7 +64,7 @@ export default function DriverProfile() {
 
     return (
         <div className="driver-profile-wrapper">
-            <h2>Driver Profile</h2>
+            <h2>Driver Vehicles</h2>
 
             {error && <p className="error-message">{error}</p>}
 

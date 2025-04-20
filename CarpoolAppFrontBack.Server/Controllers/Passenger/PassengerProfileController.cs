@@ -40,7 +40,10 @@ namespace CarpoolApp.Server.Controllers.Passenger
                     departureTime = rq.Ride.DepartureTime,
                     vehicle = rq.Ride.Vehicle != null ? $"{rq.Ride.Vehicle.Make} {rq.Ride.Vehicle.Model} - {rq.Ride.Vehicle.NumberPlate}" : "No vehicle",
                     driverName = rq.Ride.Driver.User.FullName,
-                    pickupLocation = rq.PickupLocation,
+                    pickupLocation = rq.PickupLocation == "To be decided" && rq.Ride.Origin.ToLower().Contains("habib university")
+    ? rq.Ride.Origin
+    : rq.PickupLocation,
+
                     dropoffLocation = rq.DropoffLocation == "To be decided" && rq.Ride.Destination.ToLower().Contains("habib university")
         ? rq.Ride.Destination
         : rq.DropoffLocation

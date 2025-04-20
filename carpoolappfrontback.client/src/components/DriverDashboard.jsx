@@ -143,7 +143,7 @@ export default function DriverDashboard() {
                                 <div className="ride-info">
                                     <p><strong>Departure:</strong> {new Date(ride.departureTime + 'Z').toLocaleString()}</p>
                                     <p><strong>Vehicle:</strong> {ride.vehicle}</p>
-                                    <p><strong>Seats Available:</strong> {ride.availableSeats}</p>
+                                    <p><strong>Initial Seats Available:</strong> {ride.availableSeats}</p>
                                     <p><strong>Price per Seat:</strong> Rs. {ride.pricePerSeat}</p>
                                 </div>
 
